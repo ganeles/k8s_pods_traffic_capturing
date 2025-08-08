@@ -1,24 +1,65 @@
-# k8s_pods_traffic_capturing
-Here is the script that helps me capture traffic from K8s pods easily.
+# Kubernetes Pods Traffic Capturing
 
-Sometimes I need to capture traffic from pods (or one pod) where are not tcpdump or tshark.
-The way to do it is to add a "sidecar" - anpther container into the same pod.
-All the containers in one pod have shared **network** space, so it works as you started tcpdump or tshark inside the same container.
-(by the way - this is true for network, but not for disk or process space, so you can't get files from another container in the same pod by default)
+*[Русская версия / Russian version](README_ru.md)*
 
-I found this article 
-https://medium.com/@rakhitharr/debug-network-traffic-in-kubernetes-using-a-sidecar-fd1671d8a35b
-and did these actions manually.
+A script that helps capture network traffic from Kubernetes pods easily and efficiently.
 
-But one day I needed to capture the traffic from A LOT of pods at the same time, so I wrote this script to do it automatically.
+## Overview
 
-What this script does:
-- It connects to the pods
-- Attaches sidecar 
-Example of output if you started it without parameters:
+Sometimes you need to capture network traffic from pods where tcpdump or tshark are not installed. The solution is to add a "sidecar" container to the same pod. Since all containers in a pod share the same **network** namespace, the sidecar can capture traffic as if tcpdump was running as a neighboring process.
 
+> **Note**: While containers share network namespace, they don't share disk or process space by default, so you can't access files from other containers in the same pod without additional configuration.
+
+## Background
+
+This script was inspired by [this article](https://medium.com/@rakhitharr/debug-network-traffic-in-kubernetes-using-a-sidecar-fd1671d8a35b). Initially, I performed these actions manually, but when I needed to capture traffic from multiple pods simultaneously, I automated the process with this script.
+
+## How It Works
+
+The script performs the following actions:
+
+1. Connects to the specified pods
+2. Attaches a sidecar container (nicolaka/netshoot)
+3. Launches tcpdump in the sidecar container
+4. Copies the captured data to the local machine
+5. Removes the sidecar container
+6. Creates a log file with all actions performed
+
+## Usage
+
+### Prerequisites
+
+- You must be authenticated with kubectl to access your Kubernetes environment
+- The script requires appropriate permissions to create and manage pods in the target namespace
+
+### Command Syntax
+
+```bash
+./capture_traffic_batch.sh -n <namespace> -p <pod_prefix> -d <duration_minutes>
 ```
-user@host#./capture_traffic_batch.sh
+
+### Parameters
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| `-n` | Kubernetes namespace | Yes |
+| `-p` | Pod name prefix to match | Yes |
+| `-d` | Tcpdump duration in minutes | Yes |
+
+### Example
+
+```bash
+./capture_traffic_batch.sh -n MyNamespace -p MyPodName -d 10
+```
+
+This command will capture traffic from all pods in the `MyNamespace` namespace that start with `MyPodName` for 10 minutes.
+
+### Help Output
+
+Running the script without parameters shows the usage information:
+
+```bash
+user@host:~$ ./capture_traffic_batch.sh
 Usage: ./capture_traffic_batch.sh -n <namespace> -p <pod_prefix> -d <duration_minutes>
 
   -n     Kubernetes namespace (required)
@@ -26,9 +67,52 @@ Usage: ./capture_traffic_batch.sh -n <namespace> -p <pod_prefix> -d <duration_mi
   -d     Tcpdump duration in minutes (required)
 
 Example:
-  ./capture_traffic_batch.sh -n glip-ha-lab -p gas -d 10
+  ./capture_traffic_batch.sh -n MyNamespace -p MyPodName -d 10
 
-Don't forget: you need to be authenticated in advance to run kubectl against your env
+Don't forget: you need to be authenticated in advance to run kubectl against your environment
 ```
 
-As result it generates 
+## Output
+
+The script generates the following files and directories:
+
+- **Directory**: `./pcaps_<PodName>-<YYYY-MM-DDTHH-MM-SSZ>/` - Contains all captured data
+- **Log file**: `./pcaps_<PodName>-<YYYY-MM-DDTHH-MM-SSZ>/pcap-dump.log` - Records all actions performed
+- **Capture file**: `./pcaps_<PodName>-<YYYY-MM-DDTHH-MM-SSZ>/<PodName>-<pod-hash>.pcap` - The actual network capture
+
+### Example Output Structure
+
+```
+./pcaps_MyPodName-2023-07-11T10-17-17Z/
+├── pcap-dump.log
+└── MyPodName-79cbffb479-qgwbd.pcap
+```
+
+## Features
+
+- **Batch processing**: Capture traffic from multiple pods simultaneously
+- **Automated sidecar management**: Automatically attaches and removes sidecar containers
+- **Organized output**: Creates timestamped directories for each capture session
+- **Comprehensive logging**: Records all actions for troubleshooting and audit purposes
+- **Clean cleanup**: Removes temporary sidecar containers after capture completion
+
+## Technical Details
+
+- **Sidecar image**: Uses `nicolaka/netshoot` container for network debugging capabilities
+- **Network sharing**: Leverages Kubernetes pod network namespace sharing
+- **File format**: Captures are saved in standard pcap format for analysis with Wireshark or other tools
+
+## Troubleshooting
+
+- Ensure you have the necessary RBAC permissions to create pods in the target namespace
+- Verify that the pod prefix matches existing pods in the specified namespace
+- Check that the `nicolaka/netshoot` image is accessible from your cluster
+- Review the generated log files for detailed error information
+
+## TODO
+
+- Add options for filtering captured traffic by ports or IP addresses
+
+## License
+
+This project is provided as-is for educational and operational purposes.
