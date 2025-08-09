@@ -16,12 +16,12 @@
 
 Скрипт выполняет следующие действия:
 
-1. Подключается к указанным подам
+1. Подключается к подам, имя которых соответствует заданному префиксу
 2. Присоединяет sidecar контейнер (nicolaka/netshoot)
 3. Запускает tcpdump в sidecar контейнере
 4. Копирует захваченные данные на локальную машину
 5. Удаляет sidecar контейнер
-6. Создает лог-файл со всеми выполненными действиями
+6. В процессе пишет лог-файл со всеми выполненными действиями
 
 ## Использование
 
@@ -47,10 +47,10 @@
 ### Пример
 
 ```bash
-./capture_traffic_batch.sh -n glip-ha-lab -p gas -d 10
+./capture_traffic_batch.sh -n MyNamespace -p MyPodName -d 10
 ```
 
-Эта команда захватит трафик со всех подов в пространстве имен `glip-ha-lab`, которые начинаются с `gas`, в течение 10 минут.
+Эта команда захватит трафик со всех подов в пространстве имен `MyNamespace`, которые начинаются с `MyPodName`, в течение 10 минут.
 
 ### Справочная информация
 
@@ -65,7 +65,7 @@ Usage: ./capture_traffic_batch.sh -n <namespace> -p <pod_prefix> -d <duration_mi
   -d     Tcpdump duration in minutes (required)
 
 Example:
-  ./capture_traffic_batch.sh -n glip-ha-lab -p gas -d 10
+  ./capture_traffic_batch.sh -n MyNamespace -p MyPodName -d 10
 
 Don't forget: you need to be authenticated in advance to run kubectl against your environment
 ```

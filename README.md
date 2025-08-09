@@ -18,12 +18,12 @@ This script was inspired by [this article](https://medium.com/@rakhitharr/debug-
 
 The script performs the following actions:
 
-1. Connects to the specified pods
+1. Connects to the pods, whose name matches the specified prefix
 2. Attaches a sidecar container (nicolaka/netshoot)
 3. Launches tcpdump in the sidecar container
 4. Copies the captured data to the local machine
 5. Removes the sidecar container
-6. Creates a log file with all actions performed
+6. In the process, it writes a log file with all actions performed
 
 ## Usage
 
